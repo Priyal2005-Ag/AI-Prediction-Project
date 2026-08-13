@@ -453,9 +453,14 @@ User Question:
 Answer:
 """
 
+    import os
+
     llm = OllamaLLM(
-    model="llama3.2:latest",
-    base_url="https://kde-pierre-telecom-revision.trycloudflare.com"
+        model="llama3.2:latest",
+        base_url=os.getenv(
+        "OLLAMA_BASE_URL",
+        "http://localhost:11434"
+        )
     )
 
     answer = llm.invoke(
