@@ -463,7 +463,6 @@ Answer:
 
     return answer, sources
 
-
 st.sidebar.title("AI Models")
 
 selected_model = st.sidebar.radio(
