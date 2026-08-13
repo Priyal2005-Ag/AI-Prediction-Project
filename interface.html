@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Disease Prediction System</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background: #f5f7fb;
+        }
+
+        .sidebar {
+            width: 230px;
+            background: #1e293b;
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .model-btn,
+        .predict-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            color: white;
+            background: #334155;
+        }
+
+        .model-btn:hover {
+            background: #475569;
+        }
+
+        .active {
+            background: #2563eb !important;
+        }
+
+        .predict-btn {
+            background: #2563eb;
+            margin-top: 15px;
+        }
+
+        .predict-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .main {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+        }
+
+        h1 {
+            margin-bottom: 15px;
+        }
+
+        input,
+        select {
+            margin: 8px 0;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+        }
+
+        input[type="number"] {
+            width: 250px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+        }
+
+        img {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            display: none;
+            margin-top: 10px;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #eef2ff;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        .probability-box {
+            margin-top: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dbeafe;
+        }
+
+        #studentInputs {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+
+        #studentInputs label {
+            display: inline-block;
+            width: 190px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            line-height: 1.8;
+        }
+
+        .loading {
+            color: #475569;
+            font-weight: bold;
+        }
+
+        .chatbot-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .chatbot-section h2 {
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .chatbot-section button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        .chatbot-section button:hover {
+            background: #1d4ed8;
+        }
+
+        #answer {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            min-height: 50px;
+        }
+
+        #systemStatus {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+
+        <h2>AI Models</h2>
+
+        <button
+            class="model-btn active"
+            onclick="selectModel('cnn', this)">
+            🫁 CNN
+        </button>
+
+        <button
+            class="model-btn"
+            onclick="selectModel('rf', this)">
+            🌲 Random Forest
+        </button>
+
+        <button
+            class="model-btn"
+            onclick="selectModel('kmeans', this)">
+            🔵 KMeans
+        </button>
+
+        <button
+            class="model-btn"
+            onclick="showAbout(this)">
+            📘 About Project
+        </button>
+
+    </div>
+
+    <div class="main">
+
+        <div class="card">
+
+            <h1 id="pageTitle">
+                Lung Cancer Prediction
+            </h1>
+
+            <div id="inputArea">
+
+                <input
+                    type="file"
+                    id="imageInput"
+                    accept="image/*">
+
+                <br>
+
+                <img id="preview">
+
+            </div>
+
+            <div
+                id="studentInputs"
+                style="display: none;">
+
+                <h3>Student Performance Details</h3>
+
+                <br>
+
+                <label>Study Hours</label>
+                <input
+                    type="number"
+                    id="studyHours"
+                    step="any"
+                    placeholder="Enter study hours">
+
+                <br>
+
+                <label>Attendance</label>
+                <input
+                    type="number"
+                    id="attendance"
+                    step="any"
+                    placeholder="Enter attendance">
+
+                <br>
+
+                <label>Motivation</label>
+                <input
+                    type="number"
+                    id="motivation"
+                    step="any"
+                    placeholder="Enter motivation">
+
+                <br>
+
+                <label>Online Courses</label>
+                <input
+                    type="number"
+                    id="onlineCourses"
+                    step="any"
+                    placeholder="Enter online courses">
+
+                <br>
+
+                <label>Discussions</label>
+                <input
+                    type="number"
+                    id="discussions"
+                    step="any"
+                    placeholder="Enter discussions">
+
+                <br>
+
+                <label>Assignment Completion</label>
+                <input
+                    type="number"
+                    id="assignmentCompletion"
+                    step="any"
+                    placeholder="Enter assignment completion">
+
+                <br>
+
+                <label>Exam Score</label>
+                <input
+                    type="number"
+                    id="examScore"
+                    step="any"
+                    placeholder="Enter exam score">
+
+                <br>
+
+                <label>Stress Level</label>
+                <input
+                    type="number"
+                    id="stressLevel"
+                    step="any"
+                    placeholder="Enter stress level">
+
+                <br>
+
+                <label>Final Grade</label>
+                <input
+                    type="number"
+                    id="finalGrade"
+                    step="any"
+                    placeholder="Enter final grade">
+
+                <br>
+
+                <label>Age</label>
+                <input
+                    type="number"
+                    id="age"
+                    step="any"
+                    placeholder="Enter age">
+
+                <br>
+
+                <label>Gender</label>
+
+                <select id="gender">
+                    <option value="">Select Gender</option>
+                    <option value="0">Female</option>
+                    <option value="1">Male</option>
+                </select>
+
+            </div>
+
+            <button
+                class="predict-btn"
+                onclick="predict()">
+                Predict
+            </button>
+
+            <div
+                id="output"
+                class="result"
+                style="display: none;">
+            </div>
+
+            <div
+                id="predictionResult"
+                class="result"
+                style="display: none;">
+            </div>
+
+            <div id="systemStatus">
+                Loading AI models...
+            </div>
+
+            <div class="chatbot-section">
+
+                <h2>AI RAG Assistant</h2>
+
+                <textarea
+                    id="question"
+                    rows="4"
+                    placeholder="Ask about Lung Cancer, Mango Diseases, or Student Performance..."></textarea>
+
+                <br>
+                <br>
+
+                <button onclick="askAI()">
+                    Ask AI
+                </button>
+
+                <br>
+                <br>
+
+                <div id="answer">
+                    AI response will appear here...
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        let selectedModel = "cnn";
+        let cnnModel = null;
+        let kmeansModel = null;
+        let featureModel = null;
+
+        const classes = {
+            0: "Benign",
+            1: "Malignant",
+            2: "Normal"
+        };
+
+        const mangoClasses = {
+            0: "Anthracnose",
+            1: "Bacterial Black Spot",
+            2: "Healthy",
+            3: "Multiple"
+        };
+
+        function updateStatus(message) {
+
+            const status =
+                document.getElementById("systemStatus");
+
+            status.innerText = message;
+
+        }
+
+        async function loadCNN() {
+
+            try {
+
+                updateStatus("Loading CNN model...");
+
+                cnnModel =
+                    await tf.loadGraphModel(
+                        "./models/model.json"
+                    );
+
+                console.log("CNN Loaded");
+
+                updateStatus(
+                    "CNN model loaded successfully."
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "CNN Error:",
+                    error
+                );
+
+                updateStatus(
+                    "CNN model could not be loaded."
+                );
+
+            }
+
+        }
+
+        async function loadFeatureExtractor() {
+
+            try {
+
+                featureModel =
+                    await tf.loadGraphModel(
+                        "./models/feature_extractor_tfjs/model.json"
+                    );
+
+                console.log(
+                    "Feature Extractor Loaded"
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Feature Extractor Error:",
+                    error
+                );
+
+            }
+
+        }
+
+        async function loadKMeans() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        "./student_kmeans.json"
+                    );
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "student_kmeans.json could not be loaded."
+                    );
+
+                }
+
+                kmeansModel =
+                    await response.json();
+
+                console.log(
+                    "Student Performance KMeans Loaded"
+                );
+
+                console.log(
+                    "KMeans JSON:",
+                    kmeansModel
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "KMeans Error:",
+                    error
+                );
+
+                updateStatus(
+                    "KMeans JSON could not be loaded."
+                );
+
+            }
+
+        }
+
+        async function loadAllModels() {
+
+            await Promise.all([
+                loadCNN(),
+                loadFeatureExtractor(),
+                loadKMeans()
+            ]);
+
+        }
+
+        loadAllModels();
+
+        function selectModel(model, btn) {
+
+            selectedModel = model;
+
+            document
+                .querySelectorAll(
+                    ".sidebar .model-btn"
+                )
+                .forEach(function(button) {
+
+                    button.classList.remove("active");
+
+                });
+
+            btn.classList.add("active");
+            if (model === "cnn") {
+                updateStatus( "CNN model loaded successfully.");
+            }
+            else if (model === "rf") {
+                updateStatus("Random Forest model loaded successfully.");
+            }
+            else if (model === "kmeans") {
+                updateStatus("KMeans model loaded successfully.");
+            }
+
+            const title =
+                document.getElementById(
+                    "pageTitle"
+                );
+
+            const output =
+                document.getElementById(
+                    "output"
+                );
+
+            const imageInput =
+                document.getElementById(
+                    "imageInput"
+                );
+
+            const preview =
+                document.getElementById(
+                    "preview"
+                );
+
+            const studentInputs =
+                document.getElementById(
+                    "studentInputs"
+                );
+
+            const predictionResult =
+                document.getElementById(
+                    "predictionResult"
+                );
+
+            output.style.display = "block";
+
+            predictionResult.style.display =
+                "none";
+
+            imageInput.style.display =
+                "block";
+
+            preview.style.display =
+                "none";
+
+            studentInputs.style.display =
+                "none";
+
+            if (model === "cnn") {
+
+                title.innerText =
+                    "Lung Cancer Prediction";
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            Selected Model:
+                        </span>
+                        CNN
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Application:
+                        </span>
+                        Lung Cancer Classification
+                    </p>
+
+                    <p>
+                        Upload a lung cancer image
+                        and click Predict.
+                    </p>
+
+                `;
+
+            }
+
+            else if (model === "rf") {
+
+                title.innerText =
+                    "Mango Disease Classification";
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            Selected Model:
+                        </span>
+                        Random Forest
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Application:
+                        </span>
+                        Mango Disease Classification
+                    </p>
+
+                    <p>
+                        Upload a mango leaf image
+                        and click Predict.
+                    </p>
+
+                `;
+
+            }
+
+            else if (model === "kmeans") {
+
+                title.innerText =
+                    "Student Performance Clustering";
+
+                imageInput.style.display =
+                    "none";
+
+                preview.style.display =
+                    "none";
+
+                studentInputs.style.display =
+                    "block";
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            Selected Model:
+                        </span>
+                        KMeans
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Application:
+                        </span>
+                        Student Performance Clustering
+                    </p>
+
+                    <p>
+                        Enter the student details
+                        below and click Predict.
+                    </p>
+
+                `;
+
+            }
+
+        }
+
+        function showAbout(btn) {
+
+            selectedModel = "about";
+
+            document
+                .querySelectorAll(
+                    ".sidebar .model-btn"
+                )
+                .forEach(function(button) {
+
+                    button.classList.remove("active");
+
+                });
+
+            btn.classList.add("active");
+
+            const title =
+                document.getElementById(
+                    "pageTitle"
+                );
+
+            const output =
+                document.getElementById(
+                    "output"
+                );
+
+            const imageInput =
+                document.getElementById(
+                    "imageInput"
+                );
+
+            const preview =
+                document.getElementById(
+                    "preview"
+                );
+
+            const studentInputs =
+                document.getElementById(
+                    "studentInputs"
+                );
+
+            const predictionResult =
+                document.getElementById(
+                    "predictionResult"
+                );
+
+            title.innerText =
+                "About Project";
+
+            imageInput.style.display =
+                "none";
+
+            preview.style.display =
+                "none";
+
+            studentInputs.style.display =
+                "none";
+
+            predictionResult.style.display =
+                "none";
+
+            output.style.display =
+                "block";
+
+            output.innerHTML = `
+
+                <h2>
+                    About Project
+                </h2>
+
+                <br>
+
+                <p>
+                    This project is an AI-based
+                    prediction system using
+                    Machine Learning and
+                    Deep Learning.
+                </p>
+
+                <br>
+
+                <p>
+                    <b>CNN</b> is used for
+                    lung cancer image
+                    classification.
+                </p>
+
+                <br>
+
+                <p>
+                    <b>Random Forest</b> is used
+                    for supervised mango disease
+                    classification.
+                </p>
+
+                <br>
+
+                <p>
+                    <b>KMeans</b> is used for
+                    student performance
+                    clustering.
+                </p>
+
+                <br>
+
+                <p>
+                    Random Forest mango classes:
+                </p>
+
+                <ul>
+
+                    <li>Anthracnose</li>
+                    <li>Bacterial Black Spot</li>
+                    <li>Healthy</li>
+                    <li>Multiple</li>
+
+                </ul>
+
+            `;
+
+        }
+
+        const img =
+            document.getElementById(
+                "preview"
+            );
+
+        document
+            .getElementById("imageInput")
+            .addEventListener(
+                "change",
+                function(event) {
+
+                    const file =
+                        event.target.files[0];
+
+                    if (!file) {
+                        return;
+                    }
+
+                    const reader =
+                        new FileReader();
+
+                    reader.onload =
+                        function() {
+
+                            img.src =
+                                reader.result;
+
+                            img.style.display =
+                                "block";
+
+                        };
+
+                    reader.readAsDataURL(
+                        file
+                    );
+
+                }
+            );
+
+        async function preprocess() {
+
+            return tf.tidy(function() {
+
+                let tensor =
+                    tf.browser.fromPixels(
+                        img
+                    );
+
+                tensor =
+                    tf.image.resizeBilinear(
+                        tensor,
+                        [320, 320]
+                    );
+
+                tensor =
+                    tensor.expandDims(0);
+
+                tensor =
+                    tensor.div(255);
+
+                return tensor;
+
+            });
+
+        }
+
+        async function predict() {
+
+            if (selectedModel === "cnn") {
+
+                await cnnPredict();
+
+            }
+
+            else if (selectedModel === "rf") {
+
+                await rfPredict();
+
+            }
+
+            else if (selectedModel === "kmeans") {
+
+                await kmeansPredict();
+
+            }
+
+            else {
+
+                alert(
+                    "Please select a model first."
+                );
+
+            }
+
+        }
+
+        async function cnnPredict() {
+
+            const output =
+                document.getElementById(
+                    "output"
+                );
+
+            const fileInput =
+                document.getElementById(
+                    "imageInput"
+                );
+
+            if (
+                !fileInput.files ||
+                fileInput.files.length === 0
+            ) {
+
+                alert(
+                    "Please upload a lung cancer image first."
+                );
+
+                return;
+
+            }
+
+            if (!cnnModel) {
+
+                output.style.display =
+                    "block";
+
+                output.innerHTML = `
+
+                    <p>
+                        CNN model is still loading.
+                        Please wait and try again.
+                    </p>
+
+                `;
+
+                return;
+
+            }
+
+            output.style.display =
+                "block";
+
+            output.innerHTML = `
+
+                <p class="loading">
+                    Running CNN prediction...
+                </p>
+
+            `;
+
+            const start =
+                performance.now();
+
+            let tensor = null;
+            let prediction = null;
+
+            try {
+
+                tensor =
+                    await preprocess();
+
+                prediction =
+                    cnnModel.execute(
+                        tensor
+                    );
+
+                let predictionTensor;
+
+                if (Array.isArray(prediction)) {
+
+                    predictionTensor =
+                        prediction[0];
+
+                }
+
+                else {
+
+                    predictionTensor =
+                        prediction;
+
+                }
+
+                const data =
+                    await predictionTensor.data();
+
+                const index =
+                    data.indexOf(
+                        Math.max(...data)
+                    );
+
+                const confidence =
+                    (
+                        data[index] * 100
+                    ).toFixed(2);
+
+                const end =
+                    performance.now();
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            Model:
+                        </span>
+                        CNN
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Application:
+                        </span>
+                        Lung Cancer
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Prediction:
+                        </span>
+                        ${classes[index]}
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Confidence:
+                        </span>
+                        ${confidence}%
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Prediction Time:
+                        </span>
+                        ${(end - start).toFixed(2)}
+                        ms
+                    </p>
+
+                `;
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "CNN Prediction Error:",
+                    error
+                );
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            CNN Error:
+                        </span>
+                        ${error.message}
+                    </p>
+
+                `;
+
+            }
+
+            finally {
+
+                if (tensor) {
+                    tensor.dispose();
+                }
+
+                if (
+                    prediction &&
+                    !Array.isArray(prediction) &&
+                    typeof prediction.dispose === "function"
+                ) {
+
+                    prediction.dispose();
+
+                }
+
+                if (
+                    Array.isArray(prediction)
+                ) {
+
+                    prediction.forEach(
+                        function(t) {
+
+                            if (
+                                t &&
+                                typeof t.dispose ===
+                                "function"
+                            ) {
+
+                                t.dispose();
+
+                            }
+
+                        }
+                    );
+
+                }
+
+            }
+
+        }
+
+        async function rfPredict() {
+
+            const output =
+                document.getElementById(
+                    "output"
+                );
+
+            const fileInput =
+                document.getElementById(
+                    "imageInput"
+                );
+
+            const file =
+                fileInput.files[0];
+
+            if (!file) {
+
+                alert(
+                    "Please upload a mango image first."
+                );
+
+                return;
+
+            }
+
+            output.style.display =
+                "block";
+
+            output.innerHTML = `
+
+                <p class="loading">
+                    Processing mango image...
+                </p>
+
+            `;
+
+            const start =
+                performance.now();
+
+            try {
+
+                const formData =
+                    new FormData();
+
+                formData.append(
+                    "image",
+                    file
+                );
+
+                const response =
+                    await fetch(
+                        "http://127.0.0.1:5001/predict-mango",
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Mango prediction failed."
+                    );
+
+                }
+
+                const end =
+                    performance.now();
+
+                let probabilityHTML = "";
+
+                if (data.probabilities) {
+
+                    probabilityHTML = `
+
+                        <div
+                            class="probability-box">
+
+                            <p>
+                                <span class="label">
+                                    Class Probabilities
+                                </span>
+                            </p>
+
+                            <p>
+                                Anthracnose:
+                                ${
+                                    data.probabilities[
+                                        "Anthracnose"
+                                    ] ?? "-"
+                                }%
+                            </p>
+
+                            <p>
+                                Bacterial Black Spot:
+                                ${
+                                    data.probabilities[
+                                        "Bacterial Black Spot"
+                                    ] ?? "-"
+                                }%
+                            </p>
+
+                            <p>
+                                Healthy:
+                                ${
+                                    data.probabilities[
+                                        "Healthy"
+                                    ] ?? "-"
+                                }%
+                            </p>
+
+                            <p>
+                                Multiple:
+                                ${
+                                    data.probabilities[
+                                        "Multiple"
+                                    ] ?? "-"
+                                }%
+                            </p>
+
+                        </div>
+
+                    `;
+
+                }
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            Model:
+                        </span>
+                        Random Forest
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Application:
+                        </span>
+                        Mango Disease Classification
+                    </p>
+
+                    <p>
+                        <span class="label">
+                            Prediction:
+                        </span>
+                        ${data.prediction}
+                    </p>
+
+                    ${
+                        data.confidence !== undefined
+                        ?
+                        `
+                        <p>
+                            <span class="label">
+                                Confidence:
+                            </span>
+                            ${data.confidence}%
+                        </p>
+                        `
+                        :
+                        ""
+                    }
+
+                    ${
+                        data.features !== undefined
+                        ?
+                        `
+                        <p>
+                            <span class="label">
+                                Features:
+                            </span>
+                            ${data.features}
+                        </p>
+                        `
+                        :
+                        ""
+                    }
+
+                    ${probabilityHTML}
+
+                    <p>
+                        <span class="label">
+                            Prediction Time:
+                        </span>
+                        ${(end - start).toFixed(2)}
+                        ms
+                    </p>
+
+                `;
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Mango RF Error:",
+                    error
+                );
+
+                output.innerHTML = `
+
+                    <p>
+                        <span class="label">
+                            Random Forest Error:
+                        </span>
+                    </p>
+
+                    <p>
+                        ${error.message}
+                    </p>
+
+                    <br>
+
+                    <p>
+                        Make sure your Flask
+                        application is running
+                        on port 5000.
+                    </p>
+
+                `;
+
+            }
+
+        }
+
+        async function kmeansPredict() {
+
+            const predictionResult =
+                document.getElementById(
+                    "predictionResult"
+                );
+
+            if (!kmeansModel) {
+
+                predictionResult.style.display =
+                    "block";
+
+                predictionResult.innerHTML = `
+
+                    <p>
+                        KMeans model is not loaded.
+                    </p>
+
+                    <p>
+                        Check that
+                        <b>student_kmeans.json</b>
+                        is in the same folder as
+                        interface.html.
+                    </p>
+
+                `;
+
+                return;
+
+            }
+
+            const studyHours =
+                parseFloat(
+                    document.getElementById(
+                        "studyHours"
+                    ).value
+                );
+
+            const attendance =
+                parseFloat(
+                    document.getElementById(
+                        "attendance"
+                    ).value
+                );
+
+            const motivation =
+                parseFloat(
+                    document.getElementById(
+                        "motivation"
+                    ).value
+                );
+
+            const onlineCourses =
+                parseFloat(
+                    document.getElementById(
+                        "onlineCourses"
+                    ).value
+                );
+
+            const discussions =
+                parseFloat(
+                    document.getElementById(
+                        "discussions"
+                    ).value
+                );
+
+            const assignmentCompletion =
+                parseFloat(
+                    document.getElementById(
+                        "assignmentCompletion"
+                    ).value
+                );
+
+            const examScore =
+                parseFloat(
+                    document.getElementById(
+                        "examScore"
+                    ).value
+                );
+
+            const stressLevel =
+                parseFloat(
+                    document.getElementById(
+                        "stressLevel"
+                    ).value
+                );
+
+            const finalGrade =
+                parseFloat(
+                    document.getElementById(
+                        "finalGrade"
+                    ).value
+                );
+
+            const age =
+                parseFloat(
+                    document.getElementById(
+                        "age"
+                    ).value
+                );
+
+            const gender =
+                parseFloat(
+                    document.getElementById(
+                        "gender"
+                    ).value
+                );
+
+            const values = [
+                studyHours,
+                attendance,
+                motivation,
+                onlineCourses,
+                discussions,
+                assignmentCompletion,
+                examScore,
+                stressLevel,
+                finalGrade,
+                age,
+                gender
+            ];
+
+            if (
+                values.some(
+                    function(value) {
+                        return Number.isNaN(value);
+                    }
+                )
+            ) {
+
+                alert(
+                    "Please fill all Student Performance fields."
+                );
+
+                return;
+
+            }
+
+            const startTime =
+                performance.now();
+
+            const means =
+                kmeansModel.scaler_mean ||
+                kmeansModel.mean;
+
+            const scales =
+                kmeansModel.scaler_scale ||
+                kmeansModel.scale;
+
+            if (!means || !scales) {
+
+                predictionResult.style.display =
+                    "block";
+
+                predictionResult.innerHTML = `
+
+                    <p>
+                        KMeans JSON does not contain
+                        scaler mean/scale values.
+                    </p>
+
+                `;
+
+                return;
+
+            }
+
+            const scaledValues =
+                values.map(
+                    function(value, index) {
+
+                        return (
+                            value - means[index]
+                        ) / scales[index];
+
+                    }
+                );
+
+            console.log(
+                "Original Values:",
+                values
+            );
+
+            console.log(
+                "Scaled Values:",
+                scaledValues
+            );
+
+            let nearestCluster = -1;
+
+            let minDistance =
+                Infinity;
+
+            const centers =
+                kmeansModel.cluster_centers;
+
+            if (!centers) {
+
+                predictionResult.style.display =
+                    "block";
+
+                predictionResult.innerHTML = `
+
+                    <p>
+                        cluster_centers not found
+                        in student_kmeans.json.
+                    </p>
+
+                `;
+
+                return;
+
+            }
+
+            for (
+                let c = 0;
+                c < centers.length;
+                c++
+            ) {
+
+                const center =
+                    centers[c];
+
+                let distance = 0;
+
+                for (
+                    let i = 0;
+                    i < scaledValues.length;
+                    i++
+                ) {
+
+                    distance += Math.pow(
+                        scaledValues[i] -
+                        center[i],
+                        2
+                    );
+
+                }
+
+                distance =
+                    Math.sqrt(distance);
+
+                console.log(
+                    "Cluster " +
+                    c +
+                    " Distance:",
+                    distance
+                );
+
+                if (
+                    distance <
+                    minDistance
+                ) {
+
+                    minDistance =
+                        distance;
+
+                    nearestCluster =
+                        c;
+
+                }
+
+            }
+
+            const predictionTime =
+                performance.now() -
+                startTime;
+
+            let clusterLabel =
+                "Unknown";
+
+            if (
+                kmeansModel.cluster_labels
+            ) {
+
+                clusterLabel =
+                    kmeansModel.cluster_labels[
+                        String(nearestCluster)
+                    ];
+
+            }
+
+            predictionResult.style.display =
+                "block";
+
+            predictionResult.innerHTML = `
+
+                <h3>
+                    Student Performance Result
+                </h3>
+
+                <p>
+                    <span class="label">
+                        Model:
+                    </span>
+                    KMeans
+                </p>
+
+                <p>
+                    <span class="label">
+                        Cluster Number:
+                    </span>
+                    ${nearestCluster}
+                </p>
+
+                <p>
+                    <span class="label">
+                        Performance:
+                    </span>
+                    ${clusterLabel}
+                </p>
+
+                <p>
+                    <span class="label">
+                        Prediction Time:
+                    </span>
+                    ${predictionTime.toFixed(2)}
+                    ms
+                </p>
+
+            `;
+
+            console.log(
+                "Final Cluster:",
+                nearestCluster
+            );
+
+            console.log(
+                "Cluster Label:",
+                clusterLabel
+            );
+
+        }
+
+        async function askAI() {
+
+            const question =
+                document
+                    .getElementById("question")
+                    .value
+                    .trim();
+
+            if (question === "") {
+
+                alert(
+                    "Please enter a question."
+                );
+
+                return;
+
+            }
+
+            const answer =
+                document.getElementById(
+                    "answer"
+                );
+
+            answer.innerHTML = `
+                <p class="loading">
+                    AI is thinking...
+                </p>
+            `;
+
+            try {
+
+                const response =
+                    await fetch(
+                        "http://127.0.0.1:5000/ask",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                question: question
+                            })
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "AI request failed."
+                    );
+
+                }
+
+                let sourceHTML = "";
+
+                if (
+                    data.sources &&
+                    data.sources.length > 0
+                ) {
+
+                    sourceHTML = `
+                        <div style="
+                            margin-top: 15px;
+                            padding: 12px;
+                            background: #eef2ff;
+                            border-radius: 8px;
+                            border: 1px solid #dbeafe;
+                        ">
+
+                            <p>
+                                <strong>
+                                    Sources:
+                                </strong>
+                            </p>
+
+                            <ul style="
+                                margin-top: 8px;
+                                padding-left: 20px;
+                            ">
+
+                                ${data.sources.map(
+                                    function(source) {
+
+                                        return `
+                                            <li>
+                                                ${source}
+                                            </li>
+                                        `;
+
+                                    }
+                                ).join("")}
+
+                            </ul>
+
+                        </div>
+                    `;
+
+                }
+
+                answer.innerHTML = `
+
+                    <div style="
+                        white-space: pre-line;">
+                        ${data.answer}
+                    </div>
+
+                    ${sourceHTML}
+
+                `;
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "AI Error:",
+                    error
+                );
+
+                answer.innerHTML = `
+
+                    <p>
+                        <strong>
+                            Unable to connect to AI.
+                        </strong>
+                    </p>
+
+                    <br>
+
+                    <p>
+                        Make sure your RAG server is running.
+                    </p>
+
+                    <p>
+                        RAG API:
+                        <b>
+                            http://127.0.0.1:5000
+                        </b>
+                    </p>
+
+                `;
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>

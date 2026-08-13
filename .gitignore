@@ -1,0 +1,21 @@
+# Datasets
+fruit disease classification/dataset_splitt/
+
+# ChromaDB
+RAG/chroma_db/
+RAG/chroma_db_old/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.env/
+
+# Temporary files
+*.tmp
+*.log
+
+RAG/chunks.pkl
+RAG/embeddings.pkl
