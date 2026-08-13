@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import time
 import numpy as np
 import cv2
 import streamlit as st
@@ -43,7 +44,6 @@ CHROMA_PATH = os.path.join(
     "RAG",
     "chroma_db"
 )
-
 
 CNN_CLASSES = {
     0: "Benign",
@@ -91,7 +91,6 @@ def load_rag():
 
 
 def extract_mango_features(image):
-
     image = cv2.resize(image, (320, 320))
 
     b, g, r = cv2.split(image)
@@ -113,7 +112,6 @@ def extract_mango_features(image):
     histogram_features = []
 
     for channel in [b, g, r]:
-
         hist = cv2.calcHist(
             [channel],
             [0],
@@ -203,7 +201,6 @@ def extract_mango_features(image):
 
 
 def predict_cnn(image):
-
     image = image.resize((320, 320))
 
     image_array = np.array(image)
@@ -241,7 +238,6 @@ def predict_cnn(image):
 
 
 def predict_mango(image):
-
     image_array = np.array(image)
 
     if image_array.shape[-1] == 4:
@@ -286,7 +282,6 @@ def predict_mango(image):
         model.classes_,
         probabilities
     ):
-
         probability_data[
             MANGO_CLASSES[int(class_id)]
         ] = float(
@@ -301,7 +296,6 @@ def predict_mango(image):
 
 
 def predict_kmeans(values):
-
     model = load_kmeans()
 
     means = (
@@ -341,7 +335,6 @@ def predict_kmeans(values):
     scaled = []
 
     for i, value in enumerate(values):
-
         scaled.append(
             (
                 value - means[i]
@@ -356,7 +349,6 @@ def predict_kmeans(values):
     distances = []
 
     for center in centers:
-
         center = np.array(
             center,
             dtype=float
@@ -388,7 +380,6 @@ def predict_kmeans(values):
 
 
 def ask_rag(question):
-
     db = load_rag()
 
     documents = db.similarity_search(
@@ -403,11 +394,9 @@ def ask_rag(question):
         )
 
     context_parts = []
-
     sources = []
 
     for document in documents:
-
         context_parts.append(
             document.page_content
         )
@@ -455,6 +444,61 @@ Answer:
     return answer, sources
 
 
+def rag_section(title):
+    st.divider()
+
+    st.subheader("🤖 AI RAG Assistant")
+
+    st.write(title)
+
+    question = st.text_area(
+        "Ask a question",
+        height=100,
+        placeholder="Ask your question here...",
+        key="rag_question"
+    )
+
+    if st.button(
+        "Ask AI",
+        key="rag_button"
+    ):
+        if not question.strip():
+            st.warning(
+                "Please enter your question."
+            )
+        else:
+            with st.spinner(
+                "AI is thinking..."
+            ):
+                try:
+                    answer, sources = ask_rag(
+                        question
+                    )
+
+                    st.subheader(
+                        "Answer"
+                    )
+
+                    st.write(
+                        answer
+                    )
+
+                    if sources:
+                        st.subheader(
+                            "Sources"
+                        )
+
+                        for source in sources:
+                            st.write(
+                                f"• {source}"
+                            )
+
+                except Exception as e:
+                    st.error(
+                        f"RAG Error: {e}"
+                    )
+
+
 st.sidebar.title("AI Models")
 
 selected_model = st.sidebar.radio(
@@ -463,7 +507,6 @@ selected_model = st.sidebar.radio(
         "CNN",
         "Random Forest",
         "KMeans",
-        "RAG Assistant",
         "About Project"
     ]
 )
@@ -471,7 +514,9 @@ selected_model = st.sidebar.radio(
 
 if selected_model == "CNN":
 
-    st.title("🫁 Lung Cancer Prediction")
+    st.title(
+        "🫁 Lung Cancer Prediction"
+    )
 
     st.write(
         "CNN-based lung cancer image classification."
@@ -479,7 +524,8 @@ if selected_model == "CNN":
 
     uploaded_file = st.file_uploader(
         "Upload Lung Cancer Image",
-        type=["jpg", "jpeg", "png"]
+        type=["jpg", "jpeg", "png"],
+        key="cnn_upload"
     )
 
     if uploaded_file:
@@ -495,7 +541,8 @@ if selected_model == "CNN":
         )
 
         if st.button(
-            "Predict Lung Cancer"
+            "Predict Lung Cancer",
+            key="cnn_predict"
         ):
 
             with st.spinner(
@@ -503,8 +550,6 @@ if selected_model == "CNN":
             ):
 
                 try:
-
-                    import time
 
                     start = time.perf_counter()
 
@@ -518,15 +563,19 @@ if selected_model == "CNN":
                         f"Prediction: {prediction}"
                     )
 
-                    st.metric(
-                        "Confidence",
-                        f"{confidence:.2f}%"
-                    )
+                    col1, col2 = st.columns(2)
 
-                    st.metric(
-                        "Prediction Time",
-                        f"{(end - start) * 1000:.2f} ms"
-                    )
+                    with col1:
+                        st.metric(
+                            "Confidence",
+                            f"{confidence:.2f}%"
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Prediction Time",
+                            f"{(end - start) * 1000:.2f} ms"
+                        )
 
                     st.subheader(
                         "Class Probabilities"
@@ -546,6 +595,10 @@ if selected_model == "CNN":
                         f"CNN Error: {e}"
                     )
 
+        rag_section(
+            "Ask questions about lung cancer using the knowledge base."
+        )
+
 
 elif selected_model == "Random Forest":
 
@@ -559,7 +612,8 @@ elif selected_model == "Random Forest":
 
     uploaded_file = st.file_uploader(
         "Upload Mango Leaf Image",
-        type=["jpg", "jpeg", "png"]
+        type=["jpg", "jpeg", "png"],
+        key="mango_upload"
     )
 
     if uploaded_file:
@@ -575,7 +629,8 @@ elif selected_model == "Random Forest":
         )
 
         if st.button(
-            "Predict Mango Disease"
+            "Predict Mango Disease",
+            key="mango_predict"
         ):
 
             with st.spinner(
@@ -583,8 +638,6 @@ elif selected_model == "Random Forest":
             ):
 
                 try:
-
-                    import time
 
                     start = time.perf_counter()
 
@@ -598,15 +651,19 @@ elif selected_model == "Random Forest":
                         f"Prediction: {prediction}"
                     )
 
-                    st.metric(
-                        "Confidence",
-                        f"{confidence:.2f}%"
-                    )
+                    col1, col2 = st.columns(2)
 
-                    st.metric(
-                        "Prediction Time",
-                        f"{(end - start) * 1000:.2f} ms"
-                    )
+                    with col1:
+                        st.metric(
+                            "Confidence",
+                            f"{confidence:.2f}%"
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Prediction Time",
+                            f"{(end - start) * 1000:.2f} ms"
+                        )
 
                     st.subheader(
                         "Class Probabilities"
@@ -623,6 +680,10 @@ elif selected_model == "Random Forest":
                     st.error(
                         f"Random Forest Error: {e}"
                     )
+
+        rag_section(
+            "Ask questions about mango diseases using the knowledge base."
+        )
 
 
 elif selected_model == "KMeans":
@@ -700,12 +761,11 @@ elif selected_model == "KMeans":
         )
 
     if st.button(
-        "Predict Student Cluster"
+        "Predict Student Cluster",
+        key="kmeans_predict"
     ):
 
         try:
-
-            import time
 
             gender_value = (
                 0
@@ -739,21 +799,27 @@ elif selected_model == "KMeans":
                 f"Cluster: {cluster}"
             )
 
-            st.metric(
-                "Performance",
-                str(label)
-            )
+            col1, col2 = st.columns(2)
 
-            st.metric(
-                "Prediction Time",
-                f"{(end - start) * 1000:.2f} ms"
-            )
+            with col1:
+                st.metric(
+                    "Performance",
+                    str(label)
+                )
+
+            with col2:
+                st.metric(
+                    "Prediction Time",
+                    f"{(end - start) * 1000:.2f} ms"
+                )
 
             st.subheader(
                 "Cluster Distances"
             )
 
-            for i, distance in enumerate(distances):
+            for i, distance in enumerate(
+                distances
+            ):
 
                 st.write(
                     f"Cluster {i}: {distance:.4f}"
@@ -765,70 +831,9 @@ elif selected_model == "KMeans":
                 f"KMeans Error: {e}"
             )
 
-
-elif selected_model == "RAG Assistant":
-
-    st.title(
-        "🤖 AI RAG Assistant"
+    rag_section(
+        "Ask questions about student performance using the knowledge base."
     )
-
-    st.write(
-        "Ask questions about Lung Cancer, Mango Diseases, or Student Performance."
-    )
-
-    question = st.text_area(
-        "Enter your question",
-        height=150,
-        placeholder="Ask your question here..."
-    )
-
-    if st.button(
-        "Ask AI"
-    ):
-
-        if not question.strip():
-
-            st.warning(
-                "Please enter a question."
-            )
-
-        else:
-
-            with st.spinner(
-                "AI is thinking..."
-            ):
-
-                try:
-
-                    answer, sources = ask_rag(
-                        question
-                    )
-
-                    st.subheader(
-                        "Answer"
-                    )
-
-                    st.write(
-                        answer
-                    )
-
-                    if sources:
-
-                        st.subheader(
-                            "Sources"
-                        )
-
-                        for source in sources:
-
-                            st.write(
-                                f"• {source}"
-                            )
-
-                except Exception as e:
-
-                    st.error(
-                        f"RAG Error: {e}"
-                    )
 
 
 else:
@@ -870,5 +875,5 @@ else:
     )
 
     st.write(
-        "Retrieves relevant information from the knowledge base and generates an answer using a local language model."
+        "Retrieves relevant information from the knowledge base and generates answers using a local language model."
     )
