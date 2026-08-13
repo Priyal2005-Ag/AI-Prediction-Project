@@ -453,8 +453,6 @@ User Question:
 Answer:
 """
 
-    import os
-
     llm = OllamaLLM(
         model="llama3.2:latest",
         base_url=os.getenv(
