@@ -454,7 +454,8 @@ Answer:
 """
 
     llm = OllamaLLM(
-        model="llama3.2"
+    model="llama3.2:latest",
+    base_url="https://kde-pierre-telecom-revision.trycloudflare.com"
     )
 
     answer = llm.invoke(
