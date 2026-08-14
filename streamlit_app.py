@@ -490,13 +490,13 @@ if selected_model == "CNN":
     "Upload Lung Cancer Image",
     type=["jpg", "jpeg", "png"],
     key="cnn_upload"
-)
-
-if uploaded_file:
-
-    current_file_id = (uploaded_file.name,
-        uploaded_file.size
     )
+
+    if uploaded_file:
+
+      current_file_id = (uploaded_file.name,
+        uploaded_file.size
+        )
 
     if st.session_state.get("cnn_file_id") != current_file_id:
         st.session_state.cnn_file_id = current_file_id
@@ -646,11 +646,11 @@ elif selected_model == "Random Forest":
     "Upload Mango Leaf Image",
     type=["jpg", "jpeg", "png"],
     key="mango_upload"
-)
+    )
 
-if uploaded_file:
+    if uploaded_file:
 
-    current_file_id = (
+      current_file_id = (
         uploaded_file.name,
         uploaded_file.size
     )
