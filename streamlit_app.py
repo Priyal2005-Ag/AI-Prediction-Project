@@ -456,10 +456,7 @@ Answer:
 
     llm = OllamaLLM(
     model="llama3.2:latest",
-    base_url=os.getenv(
-    "OLLAMA_BASE_URL",
-    "http://localhost:11434"
-        )
+    base_url=st.secrets["OLLAMA_BASE_URL"]
     )
 
     answer = llm.invoke(
