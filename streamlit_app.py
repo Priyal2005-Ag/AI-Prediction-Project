@@ -477,7 +477,6 @@ selected_model = st.sidebar.radio(
     ]
 )
 
-
 if selected_model == "CNN":
 
     st.title("🫁 Lung Cancer Prediction")
@@ -487,21 +486,22 @@ if selected_model == "CNN":
     )
 
     uploaded_file = st.file_uploader(
-    "Upload Lung Cancer Image",
-    type=["jpg", "jpeg", "png"],
-    key="cnn_upload"
+        "Upload Lung Cancer Image",
+        type=["jpg", "jpeg", "png"],
+        key="cnn_upload"
     )
 
     if uploaded_file:
 
-      current_file_id = (uploaded_file.name,
-        uploaded_file.size
+        current_file_id = (
+            uploaded_file.name,
+            uploaded_file.size
         )
 
-    if st.session_state.get("cnn_file_id") != current_file_id:
-        st.session_state.cnn_file_id = current_file_id
-        st.session_state.cnn_result = None
+        if st.session_state.get("cnn_file_id") != current_file_id:
 
+            st.session_state.cnn_file_id = current_file_id
+            st.session_state.cnn_result = None
 
         image = Image.open(
             uploaded_file
@@ -555,12 +555,14 @@ if selected_model == "CNN":
             col1, col2 = st.columns(2)
 
             with col1:
+
                 st.metric(
                     "Confidence",
                     f"{result['confidence']:.2f}%"
                 )
 
             with col2:
+
                 st.metric(
                     "Prediction Time",
                     f"{result['time']:.2f} ms"
@@ -627,10 +629,10 @@ if selected_model == "CNN":
             st.subheader("Sources")
 
             for source in result["sources"]:
+
                 st.write(
                     f"• {source}"
                 )
-
 
 elif selected_model == "Random Forest":
 
@@ -643,22 +645,22 @@ elif selected_model == "Random Forest":
     )
 
     uploaded_file = st.file_uploader(
-    "Upload Mango Leaf Image",
-    type=["jpg", "jpeg", "png"],
-    key="mango_upload"
+        "Upload Mango Leaf Image",
+        type=["jpg", "jpeg", "png"],
+        key="mango_upload"
     )
 
     if uploaded_file:
 
-      current_file_id = (
-        uploaded_file.name,
-        uploaded_file.size
-       )
+        current_file_id = (
+            uploaded_file.name,
+            uploaded_file.size
+        )
 
-    if st.session_state.get("mango_file_id") != current_file_id:
-        st.session_state.mango_file_id = current_file_id
-        st.session_state.mango_result = None
+        if st.session_state.get("mango_file_id") != current_file_id:
 
+            st.session_state.mango_file_id = current_file_id
+            st.session_state.mango_result = None
 
         image = Image.open(
             uploaded_file
@@ -712,12 +714,14 @@ elif selected_model == "Random Forest":
             col1, col2 = st.columns(2)
 
             with col1:
+
                 st.metric(
                     "Confidence",
                     f"{result['confidence']:.2f}%"
                 )
 
             with col2:
+
                 st.metric(
                     "Prediction Time",
                     f"{result['time']:.2f} ms"
@@ -784,6 +788,7 @@ elif selected_model == "Random Forest":
             st.subheader("Sources")
 
             for source in result["sources"]:
+
                 st.write(
                     f"• {source}"
                 )
