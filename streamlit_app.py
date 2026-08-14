@@ -5,7 +5,6 @@ import time
 import numpy as np
 import cv2
 import streamlit as st
-import tensorflow as tf
 
 from PIL import Image
 from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
@@ -74,6 +73,8 @@ if "rag_result" not in st.session_state:
 
 @st.cache_resource
 def load_cnn():
+    import tensorflow as tf
+    
     return tf.keras.models.load_model(CNN_PATH)
 
 
