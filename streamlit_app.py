@@ -456,11 +456,8 @@ Answer:
 
     llm = OllamaLLM(
     model="llama3.2:latest",
-    base_url=os.getenv(
-        "OLLAMA_BASE_URL",
-        "http://localhost:11434"
+    base_url="https://put-lou-ottawa-switched.trycloudflare.com "
     )
-)
 
     answer = llm.invoke(
         prompt
