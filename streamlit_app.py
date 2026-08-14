@@ -498,7 +498,7 @@ if selected_model == "CNN":
         uploaded_file.size
         )
 
-      if st.session_state.get("cnn_file_id") != current_file_id:
+    if st.session_state.get("cnn_file_id") != current_file_id:
         st.session_state.cnn_file_id = current_file_id
         st.session_state.cnn_result = None
 
@@ -655,7 +655,7 @@ elif selected_model == "Random Forest":
         uploaded_file.size
        )
 
-      if st.session_state.get("mango_file_id") != current_file_id:
+    if st.session_state.get("mango_file_id") != current_file_id:
         st.session_state.mango_file_id = current_file_id
         st.session_state.mango_result = None
 
