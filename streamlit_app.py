@@ -456,8 +456,11 @@ Answer:
 
     llm = OllamaLLM(
     model="llama3.2:latest",
-    base_url="https://kde-pierre-telecom-revision.trycloudflare.com"
+    base_url=os.getenv(
+        "OLLAMA_BASE_URL",
+        "http://localhost:11434"
     )
+)
 
     answer = llm.invoke(
         prompt
@@ -487,12 +490,21 @@ if selected_model == "CNN":
     )
 
     uploaded_file = st.file_uploader(
-        "Upload Lung Cancer Image",
-        type=["jpg", "jpeg", "png"],
-        key="cnn_upload"
+    "Upload Lung Cancer Image",
+    type=["jpg", "jpeg", "png"],
+    key="cnn_upload"
+)
+
+if uploaded_file:
+
+    current_file_id = (uploaded_file.name,
+        uploaded_file.size
     )
 
-    if uploaded_file:
+    if st.session_state.get("cnn_file_id") != current_file_id:
+        st.session_state.cnn_file_id = current_file_id
+        st.session_state.cnn_result = None
+
 
         image = Image.open(
             uploaded_file
@@ -634,12 +646,22 @@ elif selected_model == "Random Forest":
     )
 
     uploaded_file = st.file_uploader(
-        "Upload Mango Leaf Image",
-        type=["jpg", "jpeg", "png"],
-        key="mango_upload"
+    "Upload Mango Leaf Image",
+    type=["jpg", "jpeg", "png"],
+    key="mango_upload"
+)
+
+if uploaded_file:
+
+    current_file_id = (
+        uploaded_file.name,
+        uploaded_file.size
     )
 
-    if uploaded_file:
+    if st.session_state.get("mango_file_id") != current_file_id:
+        st.session_state.mango_file_id = current_file_id
+        st.session_state.mango_result = None
+
 
         image = Image.open(
             uploaded_file
