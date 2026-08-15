@@ -73,6 +73,7 @@ def extract_numeric_conditions(question):
 
     numeric_columns = {
         "study hours": "StudyHours",
+        "study hour": "StudyHours",
         "attendance": "Attendance",
         "resources": "Resources",
         "extracurricular": "Extracurricular",
@@ -82,21 +83,25 @@ def extract_numeric_conditions(question):
         "online course": "OnlineCourses",
         "discussions": "Discussions",
         "assignment completion": "AssignmentCompletion",
+        "assignment completion rate": "AssignmentCompletion",
         "exam score": "ExamScore",
+        "exam scores": "ExamScore",
+        "examscore": "ExamScore",
         "edutech": "EduTech",
         "stress level": "StressLevel",
         "stress": "StressLevel",
-        "final grade": "FinalGrade"
+        "final grade": "FinalGrade",
+        "final grades": "FinalGrade"
     }
 
-    operators = {
+    operator_words = {
         "greater than or equal to": ">=",
-        "at least": ">=",
         "more than or equal to": ">=",
         "less than or equal to": "<=",
+        "at least": ">=",
         "at most": "<=",
-        "more than": ">",
         "greater than": ">",
+        "more than": ">",
         "above": ">",
         "over": ">",
         "less than": "<",
@@ -107,29 +112,121 @@ def extract_numeric_conditions(question):
         "equal": "="
     }
 
-    for name, column in numeric_columns.items():
+    for column_name, column in sorted(
+        numeric_columns.items(),
+        key=lambda x: len(x[0]),
+        reverse=True
+    ):
+        for phrase, operator in operator_words.items():
 
-        if name not in question:
-            continue
+            pattern_a = (
+                rf'\b{re.escape(column_name)}\b\s+'
+                rf'{re.escape(phrase)}\s+'
+                rf'(\d+(?:\.\d+)?)\b'
+            )
 
-        for phrase, operator in sorted(
-            operators.items(),
-            key=lambda x: len(x[0]),
-            reverse=True
-        ):
-
-            pattern = rf'{re.escape(phrase)}\s+{re.escape(name)}\s*(?:of|is|=)?\s*(\d+(?:\.\d+)?)'
-
-            match = re.search(pattern, question)
-
-            if match:
-                value = float(match.group(1))
-
+            for match in re.finditer(pattern_a, question):
                 conditions.append(
-                    (column, operator, value)
+                    (column, operator, float(match.group(1)))
                 )
 
-    return conditions
+            pattern_b = (
+                rf'\b{re.escape(phrase)}\s+'
+                rf'(\d+(?:\.\d+)?)\s+'
+                rf'{re.escape(column_name)}\b'
+            )
+
+            for match in re.finditer(pattern_b, question):
+                conditions.append(
+                    (column, operator, float(match.group(1)))
+                )
+
+            pattern_c = (
+                rf'\b(\d+(?:\.\d+)?)\s+'
+                rf'{re.escape(phrase)}\s+'
+                rf'{re.escape(column_name)}\b'
+            )
+
+            reverse_operator = {
+                ">": "<",
+                "<": ">",
+                ">=": "<=",
+                "<=": ">=",
+                "=": "="
+            }
+
+            for match in re.finditer(pattern_c, question):
+                conditions.append(
+                    (
+                        column,
+                        reverse_operator[operator],
+                        float(match.group(1))
+                    )
+                )
+
+    symbol_pattern = re.compile(
+        r'(?:(?P<column1>[a-zA-Z ]+?)\s*'
+        r'(?P<operator1>>=|<=|>|<|=)\s*'
+        r'(?P<value1>\d+(?:\.\d+)?)'
+        r'|'
+        r'(?P<value2>\d+(?:\.\d+)?)\s*'
+        r'(?P<operator2>>=|<=|>|<|=)\s*'
+        r'(?P<column2>[a-zA-Z ]+?))(?=\s*(?:and|or|,|$))'
+    )
+
+    for match in symbol_pattern.finditer(question):
+
+        if match.group("column1") and match.group("value1"):
+            column_text = match.group("column1").strip()
+
+            for name, column in sorted(
+                numeric_columns.items(),
+                key=lambda x: len(x[0]),
+                reverse=True
+            ):
+                if name in column_text:
+                    conditions.append(
+                        (
+                            column,
+                            match.group("operator1"),
+                            float(match.group("value1"))
+                        )
+                    )
+                    break
+
+        elif match.group("column2") and match.group("value2"):
+            column_text = match.group("column2").strip()
+
+            reverse_operator = {
+                ">": "<",
+                "<": ">",
+                ">=": "<=",
+                "<=": ">=",
+                "=": "="
+            }
+
+            for name, column in sorted(
+                numeric_columns.items(),
+                key=lambda x: len(x[0]),
+                reverse=True
+            ):
+                if name in column_text:
+                    conditions.append(
+                        (
+                            column,
+                            reverse_operator[match.group("operator2")],
+                            float(match.group("value2"))
+                        )
+                    )
+                    break
+
+    unique_conditions = []
+
+    for condition in conditions:
+        if condition not in unique_conditions:
+            unique_conditions.append(condition)
+
+    return unique_conditions
 
 
 def extract_level_conditions(question):
@@ -359,78 +456,75 @@ def calculate_answer(question, data):
 
         target_column = None
 
-        for column in performance_columns:
+        column_priority = [
+            ("study hours", "StudyHours"),
+            ("study hour", "StudyHours"),
+            ("attendance", "Attendance"),
+            ("resources", "Resources"),
+            ("extracurricular", "Extracurricular"),
+            ("motivation", "Motivation"),
+            ("internet", "Internet"),
+            ("online courses", "OnlineCourses"),
+            ("online course", "OnlineCourses"),
+            ("discussions", "Discussions"),
+            ("assignment completion rate", "AssignmentCompletion"),
+            ("assignment completion", "AssignmentCompletion"),
+            ("exam scores", "ExamScore"),
+            ("exam score", "ExamScore"),
+            ("examscore", "ExamScore"),
+            ("edutech", "EduTech"),
+            ("stress level", "StressLevel"),
+            ("stress", "StressLevel"),
+            ("final grades", "FinalGrade"),
+            ("final grade", "FinalGrade")
+        ]
 
-            column_name = column.lower()
+        for phrase, column in column_priority:
 
-            if column == "StudyHours":
-                keywords = ["study hours", "study hour"]
+            if phrase not in question_lower:
+                continue
 
-            elif column == "OnlineCourses":
-                keywords = ["online courses", "online course"]
+            filter_patterns = [
+                rf'\b{re.escape(phrase)}\s+'
+                rf'(above|below|over|under|greater than|less than|'
+                rf'more than|at least|at most|equal to|equals|equal)'
+                rf'\s+\d+',
 
-            elif column == "AssignmentCompletion":
-                keywords = ["assignment completion", "assignment completion rate"]
+                rf'\b(above|below|over|under|greater than|less than|'
+                rf'more than|at least|at most|equal to|equals|equal)'
+                rf'\s+\d+\s+{re.escape(phrase)}',
 
-            elif column == "ExamScore":
-                keywords = ["exam score", "exam scores", "examscore"]
+                rf'\b{re.escape(phrase)}\s*'
+                rf'(>=|<=|>|<|=)\s*\d+',
 
-            elif column == "FinalGrade":
-                keywords = ["final grade", "final grades", "finalgrade"]
+                rf'\b\d+\s*(>=|<=|>|<|=)\s*'
+                rf'{re.escape(phrase)}'
+            ]
 
-            elif column == "StressLevel":
-                keywords = ["stress level", "stress"]
+            is_filter = any(
+                re.search(pattern, question_lower)
+                for pattern in filter_patterns
+            )
 
-            else:
-                keywords = [column_name]
-
-            for keyword in keywords:
-
-                if keyword in question_lower:
-
-                    is_filter = False
-
-                    filter_patterns = [
-                        rf'\b(low|medium|moderate|high)\s+{re.escape(keyword)}\b',
-                        rf'\b{re.escape(keyword)}\s+(above|below|over|under|more than|less than|greater than|less than or equal to|greater than or equal to|at least|at most)',
-                        rf'\b(above|below|over|under|more than|less than|greater than|less than or equal to|greater than or equal to|at least|at most)\s+{re.escape(keyword)}\b'
-                    ]
-
-                    for pattern in filter_patterns:
-
-                        if re.search(pattern, question_lower):
-                            is_filter = True
-                            break
-
-                    if not is_filter:
-                        target_column = column
-                        break
-
-            if target_column:
+            if not is_filter:
+                target_column = column
                 break
 
         if target_column is None:
 
-            if requested_columns:
-
-                for column in requested_columns:
-
-                    if column not in ["Age", "Gender"]:
-
-                        target_column = column
-                        break
+            for column in requested_columns:
+                if column in performance_columns:
+                    target_column = column
+                    break
 
         if target_column is None:
-
             return (
                 "Please specify what you want the average of, "
-                "for example average attendance, average exam score, "
-                "or average final grade."
+                "for example average attendance, "
+                "average exam score, or average final grade."
             )
 
         value = data[target_column].mean()
-
-        display_name = target_column
 
         display_names = {
             "StudyHours": "Study Hours",
@@ -450,7 +544,7 @@ def calculate_answer(question, data):
 
         display_name = display_names.get(
             target_column,
-            display_name
+            target_column
         )
 
         return (
