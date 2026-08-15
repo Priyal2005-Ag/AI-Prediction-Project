@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-DATA_PATH = r"C:\Users\Lenovo\OneDrive\RAG\student_performance.csv"
+DATA_PATH = r"C:\Users\Lenovo\OneDrive\AI Prediction project\RAG\student_performance.csv"
 
 df = pd.read_csv(DATA_PATH)
 
