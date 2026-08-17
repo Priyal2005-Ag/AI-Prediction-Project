@@ -37,10 +37,27 @@ KMEANS_PATH = os.path.join(
     "student_kmeans.json"
 )
 
-CHROMA_PATH = os.path.join(
-    BASE_DIR,
-    "RAG",
-    "chroma_db"
+CHROMA_PATH = os.path.abspath(
+    os.path.join(
+        BASE_DIR,
+        "RAG",
+        "chroma_db"
+    )
+)
+
+print("ChromaDB path:", CHROMA_PATH)
+print(
+    "ChromaDB exists:",
+    os.path.exists(CHROMA_PATH)
+)
+print(
+    "SQLite exists:",
+    os.path.exists(
+        os.path.join(
+            CHROMA_PATH,
+            "chroma.sqlite3"
+        )
+    )
 )
 
 
